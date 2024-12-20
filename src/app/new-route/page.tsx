@@ -1,30 +1,27 @@
-import { MapNewRoute } from "./MapNewRoute";
-import { NewRouteForm } from "./NewRouteForm";
+import { NewRouteForm } from './NewRouteForm';
+
 
 export async function searchDirections(source: string, destination: string) {
     const [sourceResponse, destinationResponse] = await Promise.all([
         fetch(`http://localhost:3000/places?text=${source}`, {
-            // cache: "force-cache", //default
-            // next: {
-            //   revalidate: 1 * 60 * 60 * 24, // 1 dia
-            // }
+            cache: "force-cache",
+            next: {
+                revalidate: 1 * 60 * 60 * 24 //1 day
+            }
         }),
         fetch(`http://localhost:3000/places?text=${destination}`, {
-            // cache: "force-cache", //default
-            // next: {
-            //   revalidate: 1 * 60 * 60 * 24, // 1 dia
-            // }
+            cache: "force-cache",
+            next: {
+                revalidate: 1 * 60 * 60 * 24 //1 day
+            }
         }),
-    ]);
+    ])
 
     if (!sourceResponse.ok) {
-        console.error(await sourceResponse.text());
-        throw new Error("Failed to fetch source data");
+        throw new Error('Erro ao buscar localizacao de origem');
     }
-
     if (!destinationResponse.ok) {
-        console.error(await destinationResponse.text());
-        throw new Error("Failed to fetch destination data");
+        throw new Error('Erro ao buscar localizacao de destino');
     }
 
     const [sourceData, destinationData] = await Promise.all([
@@ -35,43 +32,32 @@ export async function searchDirections(source: string, destination: string) {
     const placeSourceId = sourceData.candidates[0].place_id;
     const placeDestinationId = destinationData.candidates[0].place_id;
 
-    const directionsResponse = await fetch(
-        `http://localhost:3000/directions?originId=${placeSourceId}&destinationId=${placeDestinationId}`,
-        {
-            // cache: "force-cache", //default
-            // next: {
-            //   revalidate: 1 * 60 * 60 * 24, // 1 dia
-            // },
+    const directionsResponse = await fetch(`http://localhost:3000/directions?originId=${placeSourceId}&destinationId=${placeDestinationId}`, {
+        cache: "force-cache",
+        next: {
+            revalidate: 1 * 60 * 60 * 24 //1 day
         }
-    );
+    });
 
     if (!directionsResponse.ok) {
-        console.error(await directionsResponse.text());
-        throw new Error("Failed to fetch directions");
+        throw new Error('Erro ao buscar direções');
     }
-
     const directionsData = await directionsResponse.json();
 
     return {
-        directionsData,
-        placeSourceId,
-        placeDestinationId,
-    };
+        directionsData, placeSourceId, placeDestinationId
+    }
 }
 
-export async function NewRoutePage({
-    searchParams,
-}: {
-    searchParams: Promise<{ source: string; destination: string }>;
+export async function NewRoutePage({ searchParams }: {
+    searchParams: Promise<{ source: string, destination: string }>
 }) {
     const { source, destination } = await searchParams;
 
-    const result =
-        source && destination ? await searchDirections(source, destination) : null;
+    const result = source && destination ? await searchDirections(source, destination) : null;  
     let directionsData = null;
     let placeSourceId = null;
     let placeDestinationId = null;
-
     if (result) {
         directionsData = result.directionsData;
         placeSourceId = result.placeSourceId;
@@ -134,28 +120,20 @@ export async function NewRoutePage({
                                 {directionsData.routes[0].legs[0].end_address}
                             </li>
                             <li className="mb-2">
-                                <strong>Distância:</strong>{" "}
+                                <strong>Distância:</strong> {" "}
                                 {directionsData.routes[0].legs[0].distance.text}
                             </li>
                             <li className="mb-2">
-                                <strong>Duração:</strong>{" "}
+                                <strong>Duração:</strong> {" "}
                                 {directionsData.routes[0].legs[0].duration.text}
                             </li>
                         </ul>
-                        <NewRouteForm>
+                        <NewRouteForm >
                             {placeSourceId && (
-                                <input
-                                    type="hidden"
-                                    name="sourceId"
-                                    defaultValue={placeSourceId}
-                                />
+                                <input type="hidden" name="sourceId" value={placeSourceId} />
                             )}
                             {placeDestinationId && (
-                                <input
-                                    type="hidden"
-                                    name="destinationId"
-                                    defaultValue={placeDestinationId}
-                                />
+                                <input type="hidden" name="destinationId" value={placeDestinationId} />
                             )}
                             <button
                                 type="submit"
@@ -167,7 +145,7 @@ export async function NewRoutePage({
                     </div>
                 )}
             </div>
-            <MapNewRoute directionsData={directionsData} />
+            <div>mapa</div>
         </div>
     );
 }
