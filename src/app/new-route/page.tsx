@@ -1,28 +1,31 @@
-import { NewRouteForm } from './NewRouteForm';
-
+import { MapNewRoute } from "./MapNewRoute";
+import { NewRouteForm } from "./NewRouteForm";
 
 export async function searchDirections(source: string, destination: string) {
     const [sourceResponse, destinationResponse] = await Promise.all([
         fetch(`http://localhost:3000/places?text=${source}`, {
-            cache: "force-cache",
-            next: {
-                revalidate: 1 * 60 * 60 * 24 //1 day
-            }
-        }),
-        fetch(`http://localhost:3000/places?text=${destination}`, {
-            cache: "force-cache",
-            next: {
-                revalidate: 1 * 60 * 60 * 24 //1 day
-            }
-        }),
-    ])
+        // cache: "force-cache", //default
+        // next: {
+        //   revalidate: 1 * 60 * 60 * 24, // 1 dia
+        // }
+    }),
+      fetch(`http://localhost:3000/places?text=${destination}`, {
+        // cache: "force-cache", //default
+        // next: {
+        //   revalidate: 1 * 60 * 60 * 24, // 1 dia
+        // }
+    }),
+  ]);
 
     if (!sourceResponse.ok) {
-        throw new Error('Erro ao buscar localizacao de origem');
-    }
+      console.error(await sourceResponse.text());
+      throw new Error("Failed to fetch source data");
+  }
+
     if (!destinationResponse.ok) {
-        throw new Error('Erro ao buscar localizacao de destino');
-    }
+      console.error(await destinationResponse.text());
+      throw new Error("Failed to fetch destination data");
+  }
 
     const [sourceData, destinationData] = await Promise.all([
         sourceResponse.json(),
@@ -32,32 +35,43 @@ export async function searchDirections(source: string, destination: string) {
     const placeSourceId = sourceData.candidates[0].place_id;
     const placeDestinationId = destinationData.candidates[0].place_id;
 
-    const directionsResponse = await fetch(`http://localhost:3000/directions?originId=${placeSourceId}&destinationId=${placeDestinationId}`, {
-        cache: "force-cache",
-        next: {
-            revalidate: 1 * 60 * 60 * 24 //1 day
+    const directionsResponse = await fetch(
+        `http://localhost:3000/directions?originId=${placeSourceId}&destinationId=${placeDestinationId}`,
+        {
+            // cache: "force-cache", //default
+            // next: {
+            //   revalidate: 1 * 60 * 60 * 24, // 1 dia
+            // },
         }
-    });
+  );
 
     if (!directionsResponse.ok) {
-        throw new Error('Erro ao buscar direções');
-    }
+      console.error(await directionsResponse.text());
+      throw new Error("Failed to fetch directions");
+  }
+
     const directionsData = await directionsResponse.json();
 
     return {
-        directionsData, placeSourceId, placeDestinationId
-    }
+      directionsData,
+      placeSourceId,
+      placeDestinationId,
+  };
 }
 
-export async function NewRoutePage({ searchParams }: {
-    searchParams: Promise<{ source: string, destination: string }>
+export async function NewRoutePage({
+    searchParams,
+}: {
+    searchParams: Promise<{ source: string; destination: string }>;
 }) {
     const { source, destination } = await searchParams;
 
-    const result = source && destination ? await searchDirections(source, destination) : null;  
+    const result =
+        source && destination ? await searchDirections(source, destination) : null;
     let directionsData = null;
     let placeSourceId = null;
     let placeDestinationId = null;
+
     if (result) {
         directionsData = result.directionsData;
         placeSourceId = result.placeSourceId;
@@ -120,34 +134,42 @@ export async function NewRoutePage({ searchParams }: {
                                 {directionsData.routes[0].legs[0].end_address}
                             </li>
                             <li className="mb-2">
-                                <strong>Distância:</strong> {" "}
-                                {directionsData.routes[0].legs[0].distance.text}
-                            </li>
-                            <li className="mb-2">
-                                <strong>Duração:</strong> {" "}
-                                {directionsData.routes[0].legs[0].duration.text}
-                            </li>
-                        </ul>
-                        <NewRouteForm >
-                            {placeSourceId && (
-                                <input type="hidden" name="sourceId" value={placeSourceId} />
-                            )}
-                            {placeDestinationId && (
-                                <input type="hidden" name="destinationId" value={placeDestinationId} />
-                            )}
-                            <button
-                                type="submit"
-                                className="bg-main text-primary font-bold p-2 rounded mt-4"
-                            >
-                                Adicionar rota
-                            </button>
-                        </NewRouteForm>
-                    </div>
-                )}
-            </div>
-            <div>mapa</div>
-        </div>
-    );
+                              <strong>Distância:</strong>{" "}
+                              {directionsData.routes[0].legs[0].distance.text}
+                          </li>
+                          <li className="mb-2">
+                              <strong>Duração:</strong>{" "}
+                              {directionsData.routes[0].legs[0].duration.text}
+                          </li>
+                      </ul>
+                      <NewRouteForm>
+                          {placeSourceId && (
+                              <input
+                                  type="hidden"
+                                  name="sourceId"
+                                  defaultValue={placeSourceId}
+                              />
+                          )}
+                          {placeDestinationId && (
+                              <input
+                                  type="hidden"
+                                  name="destinationId"
+                                  defaultValue={placeDestinationId}
+                              />
+                          )}
+                          <button
+                              type="submit"
+                              className="bg-main text-primary font-bold p-2 rounded mt-4"
+                          >
+                              Adicionar rota
+                          </button>
+                      </NewRouteForm>
+                  </div>
+              )}
+          </div>
+          <MapNewRoute directionsData={directionsData} />
+      </div>
+  );
 }
 
 export default NewRoutePage;
