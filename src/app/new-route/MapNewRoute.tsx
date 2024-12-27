@@ -14,6 +14,12 @@ export function MapNewRoute(props: MapNewRouteProps) {
     const map = useMap(mapContainerRef);
 
     useEffect(() => {
+        if (!mapContainerRef.current) {
+            console.error("mapContainerRef.current não está disponível no MapNewRoute.");
+        }
+    }, [mapContainerRef]);
+
+    useEffect(() => {
         if (!map || !directionsData) {
             return;
         }
@@ -33,5 +39,5 @@ export function MapNewRoute(props: MapNewRouteProps) {
         });
     }, [map, directionsData]);
 
-    return <div className="w-2/3 h-full" ref={mapContainerRef} />;
+    return <div ref={mapContainerRef} style={{ width: "100%", height: "500px" }} />;
 }

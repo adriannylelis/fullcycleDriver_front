@@ -167,7 +167,7 @@ export async function NewRoutePage({
                   </div>
               )}
           </div>
-          <MapNewRoute directionsData={directionsData} />
+            {directionsData && <MapNewRoute directionsData={directionsData} />}
       </div>
   );
 }
